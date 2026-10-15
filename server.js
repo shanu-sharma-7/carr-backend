@@ -1,69 +1,82 @@
-import express from "express"
-import cors from 'cors'
-import dotenv from 'dotenv'
-import { connectDB } from "./config/db.js"
-import userRouter from "./routes/userRoutes.js"
 
-import path from 'path'
-import helmet from 'helmet'
-import { fileURLToPath } from "url"
-import carRouter from "./routes/carRoutes.js"
-import bookingRouter from "./routes/bookingRoutes.js"
-import paymentRouter from "./routes/paymentRoutes.js"
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import helmet from "helmet";
+
+import { connectDB } from "./config/db.js";
+import { uploadsDir } from "./middlewares/uploads.js";
+
+import userRouter from "./routes/userRoutes.js";
+import carRouter from "./routes/carRoutes.js";
+import bookingRouter from "./routes/bookingRoutes.js";
+import paymentRouter from "./routes/paymentRoutes.js";
 import contactRouter from "./routes/contactRoutes.js";
 import adminAuthRouter from "./routes/adminAuthRoutes.js";
 
-dotenv.config()
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename)
+dotenv.config();
 
-const app = express()
-const port  = 5000
+const app = express();
+const port = process.env.PORT || 5000;
 
-connectDB(); 
-app.use(cors())
+// Connect MongoDB
+connectDB();
+
+// Middleware
+app.use(cors());
+
 app.use(
-
   helmet({
-    crossOriginResourcePolicy: {policy: 'cross-origin'}
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
   })
-)
-app.use(express.json())
-app.use(express.urlencoded({extended : true}))
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded images from the same directory used by Multer
 app.use(
-  '/uploads' , (req,res,next)=>{
-    res.setHeader('Access-Control-Allow-Origin' , "*");
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
     next();
   },
-  express.static(path.join(process.cwd(), 'uploads'))
-)
+  express.static(uploadsDir)
+);
 
-app.use('/api/auth' , userRouter)
-
-app.use('/api/cars' , carRouter)
-app.use('/api/bookings' , bookingRouter)
-app.use('/api/payments' , paymentRouter)
+// API routes
+app.use("/api/auth", userRouter);
+app.use("/api/cars", carRouter);
+app.use("/api/bookings", bookingRouter);
+app.use("/api/payments", paymentRouter);
 app.use("/api/admin-auth", adminAuthRouter);
 app.use("/api/contacts", contactRouter);
-app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
-  res.status(500).json({ message: err.message || 'Server Error' });
+
+// Health check
+app.get("/api/ping", (req, res) => {
+  res.json({
+    ok: true,
+    time: Date.now(),
+  });
 });
 
+// Root route
+app.get("/", (req, res) => {
+  res.send("API working");
+});
 
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
 
-app.get('/api/ping' , (req,res) => res.json({
+  res.status(500).json({
+    message: err.message || "Server Error",
+  });
+});
 
-    ok: true,
-    time: Date.now()
-}))
-
-
-app.get('/' , (req , res) =>{
-
-    res.send('api working')
-})
-
+// Start server
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
