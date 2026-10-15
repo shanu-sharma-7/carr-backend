@@ -3,9 +3,9 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 
-export const uploadsDir = process.env.UPLOADS_DIR
-  ? path.resolve(process.env.UPLOADS_DIR)
-  : path.resolve(process.cwd(), "uploads");
+export const uploadsDir = path.resolve(
+  process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads")
+);
 
 fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -15,13 +15,19 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const extension = path.extname(file.originalname);
-    const filename = `${Date.now()}-${path
-      .basename(file.originalname, extension)
-      .replace(/[^a-zA-Z0-9_-]/g, "_")}${extension}`;
+    const extension = path.extname(file.originalname).toLowerCase();
 
-    cb(null, filename);
+    const originalName = path
+      .basename(file.originalname, path.extname(file.originalname))
+      .replace(/[^a-zA-Z0-9_-]/g, "_");
+
+    cb(null, `${Date.now()}-${originalName}${extension}`);
   },
 });
 
-export const uploads = multer({ storage });
+export const uploads = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
