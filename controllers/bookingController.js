@@ -457,6 +457,31 @@ export const getBookings = async (req, res, next) => {
 };
 
 // ========================================
+// GET ALL PUBLIC BOOKINGS
+// ========================================
+
+export const getPublicBookings = async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({})
+      .select(
+        "car carImage pickupDate returnDate bookingDate status amount paymentStatus"
+      )
+      .sort({ bookingDate: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      total: bookings.length,
+      bookings,
+    });
+
+  } catch (err) {
+    console.error("Get public bookings error:", err);
+    next(err);
+  }
+};
+
+// ========================================
 // GET LOGGED-IN USER BOOKINGS
 // ========================================
 
