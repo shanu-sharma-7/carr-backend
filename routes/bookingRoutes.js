@@ -7,6 +7,7 @@ import {
   deleteBooking,
   getBookings,
   getMyBookings,
+  getGuestBooking,
   updateBooking,
   updateBookingStatus,
 } from "../controllers/bookingController.js";
@@ -15,23 +16,53 @@ import { uploads } from "../middlewares/uploads.js";
 
 const bookingRouter = express.Router();
 
-// Guest customer bina login ke booking request kar sakta hai.
+// ========================================
+// PUBLIC ROUTES
+// ========================================
+
+// Customer bina login booking create kar sakta hai.
 bookingRouter.post("/", createBooking);
 
-// Booking list aur changes ko admin authentication se protect karo.
-// Yahan authMiddleware tabhi use karo jab woh admin role bhi verify karta ho.
-bookingRouter.get("/", getBookings);
+// Customer Booking ID + phone se booking check karega.
+bookingRouter.post("/guest-lookup", getGuestBooking);
 
-bookingRouter.get("/bybooking", authMiddleware, getMyBookings);
+// ========================================
+// PROTECTED CUSTOMER ROUTES
+// ========================================
+
+bookingRouter.get(
+  "/bybooking",
+  authMiddleware,
+  getMyBookings
+);
+
+// ========================================
+// ADMIN ROUTES
+// ========================================
+
+// IMPORTANT:
+// In routes par apna existing admin-role middleware bhi lagao.
+// Sirf authMiddleware tab use karo jab woh admin role verify karta ho.
+
+bookingRouter.get("/", authMiddleware, getBookings);
 
 bookingRouter.put(
   "/:id",
+  authMiddleware,
   uploads.single("carImage"),
   updateBooking
 );
 
-bookingRouter.patch("/:id/status", updateBookingStatus);
+bookingRouter.patch(
+  "/:id/status",
+  authMiddleware,
+  updateBookingStatus
+);
 
-bookingRouter.delete("/:id", deleteBooking);
+bookingRouter.delete(
+  "/:id",
+  authMiddleware,
+  deleteBooking
+);
 
 export default bookingRouter;
